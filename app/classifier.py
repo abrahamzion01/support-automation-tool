@@ -1,4 +1,4 @@
-"""Deterministic support-request classification."""
+"""Deterministic, explainable support-request classification."""
 
 from dataclasses import dataclass
 import re
@@ -8,43 +8,129 @@ import re
 class Classification:
     category: str
     confidence: float
+    needs_review: bool = False
+    matched_signals: tuple[str, ...] = ()
 
 
-KEYWORDS = {
-    "billing": {"bill", "billing", "charge", "charged", "payment", "invoice", "subscription", "price"},
-    "technical": {"error", "bug", "broken", "crash", "failed", "failure", "login", "password", "not working"},
-    "account": {"account", "profile", "email", "username", "verify", "verification"},
-    "shipping": {"shipping", "delivery", "delivered", "package", "parcel", "order", "tracking"},
-    "refund": {"refund", "refunded", "money back", "return"},
+# Larger weights represent stronger evidence for a category. Phrases are
+# intentionally included because real requests do not always use one exact
+# keyword (for example, "money disappeared" is a billing signal).
+SIGNALS = {
+    "billing": {
+        "strong": {
+            "charged twice": 4,
+            "charged me": 3,
+            "duplicate charge": 4,
+            "unknown transaction": 4,
+            "money disappeared": 4,
+            "billing": 2,
+            "invoice": 2,
+            "subscription": 2,
+        },
+        "keywords": {"bill", "charge", "charged", "payment", "invoice", "subscription", "price", "transaction"},
+    },
+    "technical": {
+        "strong": {
+            "not working": 4,
+            "keeps crashing": 4,
+            "cannot log in": 4,
+            "can't log in": 4,
+            "password reset": 3,
+            "error message": 3,
+        },
+        "keywords": {"error", "bug", "broken", "crash", "failed", "failure", "login", "password", "technical"},
+    },
+    "account": {
+        "strong": {
+            "change my email": 4,
+            "update my email": 4,
+            "verify my account": 3,
+            "account verification": 3,
+        },
+        "keywords": {"account", "profile", "email", "username", "verify", "verification"},
+    },
+    "shipping": {
+        "strong": {
+            "where is my order": 4,
+            "where is my package": 4,
+            "delivery date": 3,
+            "track my order": 3,
+        },
+        "keywords": {"shipping", "delivery", "delivered", "package", "parcel", "order", "tracking", "carrier"},
+    },
+    "refund": {
+        "strong": {
+            "want a refund": 4,
+            "request a refund": 4,
+            "money back": 4,
+            "get my money back": 4,
+            "return an item": 3,
+        },
+        "keywords": {"refund", "refunded", "return", "reimbursement"},
+    },
 }
+
+REVIEW_THRESHOLD = 0.65
+AMBIGUITY_MARGIN = 0.15
 
 
 def _tokens(text: str) -> set[str]:
     return set(re.findall(r"[a-z0-9]+", text.lower()))
 
 
-def classify_request(text: str) -> Classification:
-    """Classify a request using transparent keyword scoring.
+def _score_category(normalized: str, tokens: set[str], signals: dict) -> tuple[int, list[str]]:
+    score = 0
+    matched: list[str] = []
 
-    Confidence is based on the winning category's share of all matching
-    category keywords, with a small floor for weak matches.
+    for phrase, weight in signals["strong"].items():
+        if phrase in normalized:
+            score += weight
+            matched.append(phrase)
+
+    for keyword in signals["keywords"]:
+        if keyword in tokens:
+            score += 1
+            matched.append(keyword)
+
+    return score, matched
+
+
+def classify_request(text: str) -> Classification:
+    """Classify a request with weighted, transparent signals.
+
+    Low-confidence or closely competing classifications are explicitly marked
+    for human review instead of pretending the classifier is certain.
     """
     if not text or not text.strip():
-        return Classification("unknown", 0.0)
+        return Classification("unknown", 0.0, True, ())
 
-    normalized = text.lower()
+    normalized = " ".join(text.lower().split())
     tokens = _tokens(normalized)
-    scores: dict[str, int] = {}
+    scored: dict[str, tuple[int, list[str]]] = {}
 
-    for category, keywords in KEYWORDS.items():
-        score = sum(1 for keyword in keywords if keyword in tokens or keyword in normalized)
+    for category, signals in SIGNALS.items():
+        score, matched = _score_category(normalized, tokens, signals)
         if score:
-            scores[category] = score
+            scored[category] = (score, matched)
 
-    if not scores:
-        return Classification("unknown", 0.0)
+    if not scored:
+        return Classification("unknown", 0.0, True, ())
 
-    category, winning_score = max(scores.items(), key=lambda item: item[1])
-    total = sum(scores.values())
+    ranked = sorted(scored.items(), key=lambda item: item[1][0], reverse=True)
+    category, (winning_score, matched) = ranked[0]
+    total = sum(score for score, _ in scored.values())
     confidence = min(0.99, 0.50 + 0.50 * (winning_score / total))
-    return Classification(category, round(confidence, 2))
+
+    if len(ranked) > 1:
+        second_score = ranked[1][1][0]
+        gap = winning_score / max(total, 1) - second_score / max(total, 1)
+    else:
+        gap = 1.0
+
+    needs_review = confidence < REVIEW_THRESHOLD or gap < AMBIGUITY_MARGIN
+    return Classification(
+        category=category,
+        confidence=round(confidence, 2),
+        needs_review=needs_review,
+        matched_signals=tuple(sorted(set(matched))),
+    )
