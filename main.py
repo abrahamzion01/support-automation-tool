@@ -55,14 +55,23 @@ def main() -> None:
     result = run_pipeline(args.request, args.knowledge_base)
 
     print(f"Category: {result.classification.category}")
-    print(f"Confidence: {result.classification.confidence:.2f}")
+    print(f"Classification confidence: {result.classification.confidence:.2f}")
     print(f"Needs human review: {'yes' if result.classification.needs_review else 'no'}")
     if result.classification.matched_signals:
         print("Matched signals: " + ", ".join(result.classification.matched_signals))
 
     print("\nKnowledge base matches:")
-    for match in result.matches:
-        print(f"- {match.article.title} ({match.score:.4f})")
+    if result.matches:
+        for match in result.matches:
+            print(f"- {match.article.title} ({match.score:.4f})")
+    else:
+        print("- No sufficiently relevant articles found")
+
+    print(f"\nDraft grounding confidence: {result.draft.confidence:.4f}")
+    print(f"Draft requires human review: {'yes' if result.draft.review_required else 'no'}")
+    print(f"Grounding note: {result.draft.grounding_note}")
+    print("Sources: " + (", ".join(result.draft.sources) if result.draft.sources else "none"))
+
     print("\nDraft response:\n")
     print(result.draft.response)
     print("\nStatus: Awaiting human review")
