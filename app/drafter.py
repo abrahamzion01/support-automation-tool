@@ -60,7 +60,7 @@ def draft_response(
         except AIUnavailable as exc:
             grounding_note = (
                 "OpenAI unavailable; deterministic fallback used: "
-                f"{exc}. Strong retrieved knowledge remains available for human review."
+                f"{exc}. Strong grounding basis remains available for human review."
             )
     else:
         grounding_note = (
