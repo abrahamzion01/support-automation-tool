@@ -1,65 +1,65 @@
 # Support Automation Tool
 
-A reproducible support automation pipeline that classifies incoming requests, searches a knowledge base, and drafts a clear response for human review.
+A reproducible AI-assisted support automation tool that can handle company-specific support requests, answer general questions conversationally, search a knowledge base, and prepare responses for human review.
 
 ## What the tool does
 
 ```text
-Incoming request
-      |
-      v
-+------------------+
-| Classify request |
-+--------+---------+
-         |
-         v
-+------------------+
-| Search knowledge |
-| base              |
-+--------+---------+
-         |
-         v
-+-----------------------------+
-| AI / deterministic drafting |
-| + confidence + sources      |
-+-------------+---------------+
-              |
-              v
-      +----------------+
-      | Human review   |
-      +---+---------+--+
-          |         |
-       approve   edit/reject
+                         User message
+                              |
+                              v
+                       +--------------+
+                       | AI Router    |
+                       +------+-------+
+                              |
+                +-------------+-------------+
+                |                           |
+                v                           v
+         Support request              General question
+                |                           |
+                v                           v
+        Classifier + KB              OpenAI conversation
+                |                           |
+                v                           |
+         Grounded AI draft                 |
+                |                           |
+                +-------------+-------------+
+                              v
+                       Human review
+                    approve / edit / reject
 ```
 
-The application is intentionally **human-in-the-loop**. It prepares a response but does not automatically send customer messages.
+The application is intentionally **human-in-the-loop** for support responses. It prepares a response but does not automatically send customer messages.
 
 ## Features
 
-- Classifies support requests into practical categories.
-- Uses explainable weighted signals and confidence scoring.
+- Routes messages between support and general conversational modes.
+- Classifies support requests with explainable weighted signals and confidence scoring.
 - Searches a local knowledge base with deterministic TF-IDF-style cosine similarity.
-- Can restrict retrieval to the predicted category.
+- Restricts support retrieval to the predicted category when appropriate.
 - Rejects weak retrieval matches instead of treating them as verified evidence.
-- Uses OpenAI for more natural, context-aware drafts when configured.
-- Grounds AI drafts in retrieved knowledge-base material.
-- Falls back to the deterministic drafter when OpenAI is unavailable.
-- Exposes draft confidence, source article IDs, AI status, and a grounding note for reviewers.
-- Supports approve, edit, and reject decisions from the CLI.
-- Handles unknown or ambiguous requests conservatively.
+- Uses OpenAI for natural, context-aware responses when configured.
+- Grounds support AI drafts in retrieved knowledge-base material.
+- Falls back to a deterministic local support drafter when OpenAI is unavailable.
+- Maintains bounded multi-turn conversation history for general AI conversations.
+- Exposes draft confidence, source IDs, AI status, and grounding notes for reviewers.
+- Supports approve, edit, and reject decisions for support drafts.
 - Includes unit tests, mocked AI tests, end-to-end tests, and GitHub Actions CI.
 
 ## Architecture
 
-The core pipeline is split into small, testable components:
+The main components are:
 
-- `app/classifier.py` — turns an incoming request into a category, confidence score, matched signals, and review flag.
+- `app/router.py` — chooses `support` or `general` mode.
+- `app/conversation.py` — stores a bounded history of user/assistant turns.
+- `app/chat.py` — unified entry point that routes a message and updates conversation history.
+- `app/classifier.py` — classifies support requests and estimates confidence.
 - `app/knowledge_base.py` — loads local JSON articles and ranks them with deterministic TF-IDF-style cosine similarity.
-- `app/ai.py` — integrates the OpenAI Responses API and isolates API failures behind `AIUnavailable`.
-- `app/drafter.py` — chooses an AI-grounded draft when appropriate and falls back to the deterministic draft when needed.
-- `app/pipeline.py` — orchestrates classification, retrieval, and drafting.
-- `app/review.py` — validates the human's approve/edit/reject decision without sending anything externally.
-- `main.py` — provides the command-line interface.
+- `app/ai.py` — integrates the OpenAI Responses API for grounded support drafts and general conversation.
+- `app/drafter.py` — generates AI-grounded support drafts when appropriate and falls back locally.
+- `app/pipeline.py` — orchestrates support classification, retrieval, and drafting.
+- `app/review.py` — validates approve/edit/reject decisions without sending anything externally.
+- `main.py` — command-line interface for single requests and multi-turn chat.
 
 ## Project structure
 
@@ -67,20 +67,26 @@ The core pipeline is split into small, testable components:
 support-automation-tool/
 ├── app/
 │   ├── ai.py
+│   ├── chat.py
 │   ├── classifier.py
+│   ├── conversation.py
 │   ├── drafter.py
 │   ├── knowledge_base.py
 │   ├── pipeline.py
-│   └── review.py
+│   ├── review.py
+│   └── router.py
 ├── data/
 │   └── knowledge_base.json
 ├── tests/
 │   ├── test_ai.py
+│   ├── test_chat.py
 │   ├── test_classifier.py
+│   ├── test_conversation.py
 │   ├── test_drafter.py
 │   ├── test_knowledge_base.py
 │   ├── test_pipeline.py
-│   └── test_review.py
+│   ├── test_review.py
+│   └── test_router.py
 ├── .github/
 │   └── workflows/
 │       └── tests.yml
@@ -94,11 +100,11 @@ support-automation-tool/
 ## Requirements
 
 - Python 3.11+
-- An OpenAI API key for AI-powered drafting
-- No database
-- No cloud service is required when using the deterministic fallback
+- An OpenAI API key for AI-powered responses
+- No database required
+- No cloud service required when using the deterministic support fallback
 
-The application uses the official OpenAI Python SDK when AI drafting is enabled. The OpenAI API uses the Responses API for direct model requests. citeturn0search0
+The application uses the official OpenAI Python SDK when AI features are enabled.
 
 ## Configure OpenAI
 
@@ -108,7 +114,7 @@ Create a local environment file from the example:
 cp .env.example .env
 ```
 
-Then set your API key:
+Set your API key in `.env`:
 
 ```text
 OPENAI_API_KEY=your_real_api_key
@@ -117,13 +123,11 @@ OPENAI_MODEL=gpt-5.6-luna
 
 **Never commit `.env` or a real API key.** The repository's `.gitignore` excludes `.env`.
 
-The default model is `gpt-5.6-luna`, which OpenAI currently describes as optimized for cost-sensitive, high-volume workloads. citeturn0search0
-
-If no API key is configured, the application automatically uses the deterministic local drafter instead.
+If no API key is configured, company-specific support requests continue to work through the deterministic local path. General conversations report that the AI service is unavailable rather than pretending to have answered with AI.
 
 ## Run locally
 
-Clone the repository and enter it:
+Clone the repository:
 
 ```bash
 git clone https://github.com/abrahamzion01/support-automation-tool.git
@@ -136,23 +140,15 @@ Install dependencies:
 python3 -m pip install -r requirements.txt
 ```
 
-Run a request through the pipeline:
+### Support request
 
 ```bash
 python3 main.py "I was charged twice for my subscription"
 ```
 
-The CLI displays:
+The system classifies the request, retrieves relevant company guidance, generates a grounded draft when OpenAI is available, and shows the evidence and review state.
 
-- classification and confidence;
-- knowledge-base matches;
-- draft grounding confidence;
-- whether OpenAI generated the draft;
-- the knowledge sources used;
-- the grounding/review note;
-- the draft response.
-
-To include interactive human review:
+### Human review
 
 ```bash
 python3 main.py "I was charged twice for my subscription" --review
@@ -161,82 +157,117 @@ python3 main.py "I was charged twice for my subscription" --review
 The reviewer can:
 
 - `a` — approve the generated draft;
-- `e` — edit the draft before approval;
+- `e` — edit the draft;
 - `r` — reject the draft.
 
 No action sends a message to a customer automatically.
 
-## Run the tests
+### General AI chat
 
-Run the complete test suite:
+Start a multi-turn conversation:
+
+```bash
+python3 main.py --chat
+```
+
+Example:
+
+```text
+AI chat started. Type 'exit' to stop.
+
+You: What is recursion?
+Assistant: Recursion is when a function solves a problem by calling itself...
+
+You: Explain it like I'm a beginner.
+Assistant: Think of recursion as...
+```
+
+The conversation object keeps a bounded number of recent turns so the AI can understand follow-up questions without allowing history to grow indefinitely.
+
+## Run the tests
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-The tests cover classification, retrieval, drafting, the OpenAI integration without making real API calls, the end-to-end pipeline, and human review.
+Tests cover classification, routing, conversation memory, retrieval, drafting, the unified chat flow, the OpenAI integration without real API calls, the end-to-end support pipeline, and human review.
 
-GitHub Actions runs the unittest suite on pushes and pull requests. CI does not need an OpenAI API key because the AI integration is mocked in tests.
+GitHub Actions runs the test suite on pushes and pull requests. CI does not require an OpenAI API key because AI calls are mocked in tests.
 
-## Example
+## How routing works
 
-Input:
+The router deliberately uses a conservative approach:
 
 ```text
-I was charged twice for my subscription
+Strong support evidence
+        ↓
+     SUPPORT
+        ↓
+Company knowledge base
+        ↓
+Grounded response
 ```
 
-The pipeline identifies this as a billing request, retrieves the duplicate-charge guidance, and — when OpenAI is configured and the evidence is sufficiently strong — asks the model to turn that verified material into a professional draft.
+General signals or questions that do not look like company support requests are routed to conversational AI:
 
-The AI receives the customer request, category, and retrieved knowledge-base material. It is explicitly instructed to use only that material and not invent policies, prices, timelines, guarantees, or credentials. The draft remains subject to human review.
+```text
+General question
+      ↓
+   GENERAL
+      ↓
+OpenAI + conversation history
+```
+
+If the router is uncertain but there is some support evidence, it keeps the message in support mode so company-specific knowledge can still be applied safely.
 
 ## AI safety and reliability
 
-### 1. Human approval is mandatory
+### 1. Human approval is mandatory for support drafts
 
-The system generates drafts only. The review layer deliberately has no customer messaging integration.
+The system generates drafts only. The review layer has no customer messaging integration.
 
-### 2. Retrieval remains the source of truth
+### 2. Retrieval remains the source of truth for company support
 
-OpenAI receives retrieved knowledge rather than being allowed to answer from general knowledge. This keeps support guidance tied to the application's knowledge base.
+OpenAI receives retrieved knowledge for support requests instead of being allowed to invent company policies. The model is instructed not to invent refunds, prices, timelines, guarantees, or credentials.
 
-### 3. AI failure does not break the application
+### 3. AI failure does not break support automation
 
-Missing API keys, missing SDKs, API failures, and empty model responses are handled as `AIUnavailable`. The drafter then uses the deterministic local response path.
+Missing API keys, missing SDKs, API failures, and empty model responses are represented as `AIUnavailable`. Support drafting then falls back to the deterministic local response path.
 
 ### 4. Weak evidence is visible
 
 Classification confidence and retrieval confidence are separate signals. An uncertain classification or weak knowledge match sets `review_required=True`.
 
-### 5. AI-generated drafts are explicitly marked
+### 5. Conversation memory is bounded
 
-The `Draft` object contains `ai_generated`, so downstream code and the CLI can distinguish an AI response from a deterministic fallback.
+Only a fixed number of recent user/assistant messages are retained in memory. This prevents unbounded growth and keeps prompts manageable.
 
 ### 6. Secrets stay out of source control
 
-API credentials are loaded from `OPENAI_API_KEY` and `.env` is ignored by Git. No secret is stored in the repository.
+API credentials are loaded from `OPENAI_API_KEY` and `.env` is ignored by Git. No secret belongs in the repository.
 
-## Engineering decisions I worked on
+## Engineering decisions to understand
 
-The main improvements in the current implementation are:
+The main engineering work in the current implementation includes:
 
 1. **Classifier confidence calibration** — confidence considers evidence strength and ambiguity instead of treating a single weak keyword as highly certain.
-2. **Safer retrieval** — knowledge-base search supports category filtering and minimum similarity thresholds, with deterministic result ordering.
-3. **Grounded drafting** — drafts expose confidence, sources, and review state so a human can distinguish strong evidence from uncertain matches.
-4. **OpenAI integration** — the AI layer is isolated in `app/ai.py`, uses the Responses API, accepts configuration through environment variables, and has a deterministic fallback.
-5. **End-to-end verification** — tests exercise the request → classification → retrieval → draft flow, including mocked AI behavior and human review decisions.
-6. **Reproducibility** — CI tests the application without requiring an OpenAI API key or live external model calls.
+2. **Safer retrieval** — knowledge-base search supports category filtering and minimum similarity thresholds with deterministic ordering.
+3. **Grounded drafting** — support drafts expose confidence, sources, and review state so a human can distinguish evidence from uncertainty.
+4. **OpenAI integration** — the AI layer is isolated from business logic and has a deterministic support fallback.
+5. **Conversational routing** — general questions can use OpenAI without bypassing the company-support knowledge workflow.
+6. **Conversation memory** — follow-up questions can use recent conversation context while keeping history bounded.
+7. **End-to-end testing** — tests verify the request → routing → classification/retrieval → drafting → review behavior, including mocked AI calls.
+8. **Reproducibility** — CI does not depend on a live model call, database, or external support service.
 
-These are the areas to be prepared to explain during a squad review: the reasoning behind the confidence calculation, how TF-IDF retrieval works, how retrieved context is passed to OpenAI, why weak matches require review, how the fallback works, and how the tests prove the system behaves safely.
+Be prepared to explain the confidence calculation, TF-IDF retrieval, routing decision, conversation memory, how retrieved context is passed to OpenAI, why support answers remain grounded, and how the fallback works.
 
 ## Future improvements
 
-Possible next steps include:
-
-- AI-assisted classification with structured output and deterministic fallback;
-- semantic/vector retrieval while keeping source tracking;
-- a web/API interface for support agents;
-- structured audit logs for review decisions;
-- evaluation datasets and precision/recall/groundedness metrics;
-- rate limiting and cost controls for AI usage;
-- authentication and role-based access before production deployment.
+- AI-assisted classification with structured model output and deterministic fallback.
+- Semantic/vector retrieval while retaining source tracking.
+- A web/API interface for support agents.
+- Persistent conversation storage with privacy controls.
+- Structured audit logs for review decisions.
+- Evaluation datasets and metrics for routing, retrieval, groundedness, and response quality.
+- Rate limiting and AI cost controls.
+- Authentication and role-based access before production deployment.
