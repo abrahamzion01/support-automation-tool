@@ -27,6 +27,11 @@ class ReviewTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             review_draft("send", "Draft response")
 
+    def test_edit_trims_whitespace(self):
+        decision = review_draft(" edit ", "Draft response", "  Improved response  ")
+        self.assertEqual(decision.action, "edited")
+        self.assertEqual(decision.response, "Improved response")
+
 
 if __name__ == "__main__":
     unittest.main()
