@@ -28,7 +28,10 @@ def _tokens(text: str) -> list[str]:
 class KnowledgeBase:
     def __init__(self, articles: list[Article]):
         self.articles = articles
-        self._documents = [_tokens(f"{a.title} {a.category} {a.content}") for a in articles]
+        self._documents = [
+            _tokens(f"{article.title} {article.category} {article.content}")
+            for article in articles
+        ]
         self._document_frequency: dict[str, int] = {}
         for document in self._documents:
             for token in set(document):
@@ -40,9 +43,20 @@ class KnowledgeBase:
         articles = [Article(**item) for item in data]
         return cls(articles)
 
-    def search(self, query: str, limit: int = 3) -> list[SearchResult]:
+    def search(
+        self,
+        query: str,
+        limit: int = 3,
+        category: str | None = None,
+        min_score: float = 0.0,
+    ) -> list[SearchResult]:
+        """Return relevant articles using deterministic TF-IDF cosine similarity.
+
+        Category filtering is optional. Results below ``min_score`` are omitted
+        so the drafting layer cannot treat a barely related article as evidence.
+        """
         query_tokens = _tokens(query)
-        if not query_tokens:
+        if not query_tokens or limit <= 0:
             return []
 
         query_counts = {token: query_tokens.count(token) for token in set(query_tokens)}
@@ -50,13 +64,16 @@ class KnowledgeBase:
         results: list[SearchResult] = []
 
         for article, document in zip(self.articles, self._documents):
+            if category and article.category != category:
+                continue
+
             counts = {token: document.count(token) for token in set(document)}
             vector = self._tfidf(counts, len(document))
             score = self._cosine(query_vector, vector)
-            if score > 0:
+            if score >= min_score and score > 0:
                 results.append(SearchResult(article, round(score, 4)))
 
-        results.sort(key=lambda result: result.score, reverse=True)
+        results.sort(key=lambda result: (-result.score, result.article.id))
         return results[:limit]
 
     def _tfidf(self, counts: dict[str, int], length: int) -> dict[str, float]:
