@@ -21,8 +21,22 @@ class SearchResult:
     score: float
 
 
+_SYNONYMS = {
+    "charged": "charge",
+    "charges": "charge",
+    "charging": "charge",
+    "payments": "payment",
+    "paid": "pay",
+    "payments": "payment",
+    "invoices": "invoice",
+    "refunded": "refund",
+    "refunding": "refund",
+}
+
+
 def _tokens(text: str) -> list[str]:
-    return re.findall(r"[a-z0-9]+", text.lower())
+    raw_tokens = re.findall(r"[a-z0-9]+", text.lower())
+    return [_SYNONYMS.get(token, token) for token in raw_tokens]
 
 
 class KnowledgeBase:
