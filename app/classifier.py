@@ -12,9 +12,6 @@ class Classification:
     matched_signals: tuple[str, ...] = ()
 
 
-# Larger weights represent stronger evidence for a category. Phrases are
-# intentionally included because real requests do not always use one exact
-# keyword (for example, "money disappeared" is a billing signal).
 SIGNALS = {
     "billing": {
         "strong": {
@@ -97,12 +94,7 @@ def _score_category(normalized: str, tokens: set[str], signals: dict) -> tuple[i
 
 
 def classify_request(text: str) -> Classification:
-    """Classify a request with weighted, transparent signals.
-
-    Confidence reflects both the strength of the winning evidence and how
-    clearly it beats competing categories. Weak matches are sent to review
-    rather than being presented as highly confident classifications.
-    """
+    """Classify a request with weighted, transparent signals."""
     if not text or not text.strip():
         return Classification("unknown", 0.0, True, ())
 
@@ -122,12 +114,15 @@ def classify_request(text: str) -> Classification:
     category, (winning_score, matched) = ranked[0]
     total = sum(score for score, _ in scored.values())
 
-    # Confidence combines absolute evidence strength with the share of the
-    # evidence belonging to the winning category. This avoids treating a
-    # single weak keyword as near-certain.
     strength = min(winning_score / MAX_CATEGORY_SCORE, 1.0)
     evidence_share = winning_score / max(total, 1)
     confidence = 0.5 + 0.3 * strength + 0.2 * evidence_share
+
+    # One weak keyword is evidence of a topic, not evidence of intent.
+    # Cap its confidence so vague requests such as "account question"
+    # are routed to human review.
+    if winning_score < 2:
+        confidence = min(confidence, 0.60)
 
     if len(ranked) > 1:
         second_score = ranked[1][1][0]
