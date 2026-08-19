@@ -8,6 +8,10 @@ from .drafter import Draft, draft_response
 from .knowledge_base import KnowledgeBase, SearchResult
 
 
+# Similarity below this threshold is not strong enough to ground a draft.
+MIN_KNOWLEDGE_SCORE = 0.08
+
+
 @dataclass(frozen=True)
 class SupportResult:
     request: str
@@ -24,6 +28,11 @@ def run_pipeline(request: str, knowledge_base_path: str | Path) -> SupportResult
     # Retrieval still runs because relevant knowledge can help the human make
     # the final decision.
     knowledge_base = KnowledgeBase.from_json(knowledge_base_path)
-    matches = knowledge_base.search(request, limit=3)
+    matches = knowledge_base.search(
+        request,
+        limit=3,
+        category=classification.category if classification.category != "unknown" else None,
+        min_score=MIN_KNOWLEDGE_SCORE,
+    )
     draft = draft_response(request, classification, matches)
     return SupportResult(request, classification, matches, draft)
