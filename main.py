@@ -56,6 +56,10 @@ def main() -> None:
 
     print(f"Category: {result.classification.category}")
     print(f"Confidence: {result.classification.confidence:.2f}")
+    print(f"Needs human review: {'yes' if result.classification.needs_review else 'no'}")
+    if result.classification.matched_signals:
+        print("Matched signals: " + ", ".join(result.classification.matched_signals))
+
     print("\nKnowledge base matches:")
     for match in result.matches:
         print(f"- {match.article.title} ({match.score:.4f})")
