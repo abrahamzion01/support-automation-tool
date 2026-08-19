@@ -26,6 +26,12 @@ class ClassifierTests(unittest.TestCase):
         self.assertEqual(result.category, "refund")
         self.assertIn("get my money back", result.matched_signals)
 
+    def test_single_weak_signal_requires_review(self):
+        result = classify_request("I have a question about my account")
+        self.assertEqual(result.category, "account")
+        self.assertLess(result.confidence, 0.65)
+        self.assertTrue(result.needs_review)
+
     def test_unknown_request_requires_review(self):
         result = classify_request("Tell me something completely unrelated")
         self.assertEqual(result.category, "unknown")
