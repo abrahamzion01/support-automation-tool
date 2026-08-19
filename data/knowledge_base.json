@@ -1,0 +1,44 @@
+[
+  {
+    "id": "billing-duplicate-charge",
+    "title": "Duplicate charges",
+    "category": "billing",
+    "content": "If a customer sees two charges for one purchase, one may be a temporary authorization. Ask for the charge dates and the last four digits of the payment method so the billing team can investigate."
+  },
+  {
+    "id": "billing-invoice",
+    "title": "Finding an invoice",
+    "category": "billing",
+    "content": "Customers can request a copy of an invoice from support. Include the invoice date and account email when requesting help."
+  },
+  {
+    "id": "technical-login",
+    "title": "Login problems",
+    "category": "technical",
+    "content": "For login problems, confirm the account email and recommend using the password-reset flow. Never ask a customer to send their password."
+  },
+  {
+    "id": "technical-error",
+    "title": "Unexpected errors",
+    "category": "technical",
+    "content": "For an unexpected application error, collect the error message, approximate time, affected feature, and device or browser details."
+  },
+  {
+    "id": "account-email",
+    "title": "Changing an account email",
+    "category": "account",
+    "content": "Account email changes should be verified before they are applied. Ask the customer to follow the account verification process rather than sharing sensitive credentials."
+  },
+  {
+    "id": "shipping-tracking",
+    "title": "Order tracking",
+    "category": "shipping",
+    "content": "Customers can receive tracking help by providing their order number. Support should check the latest carrier status before giving an estimated delivery update."
+  },
+  {
+    "id": "refund-request",
+    "title": "Refund requests",
+    "category": "refund",
+    "content": "For a refund request, collect the order number and reason for the request. Support should verify eligibility under the applicable refund policy before approving it."
+  }
+]
