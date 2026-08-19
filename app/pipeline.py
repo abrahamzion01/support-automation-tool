@@ -8,8 +8,9 @@ from .drafter import Draft, draft_response
 from .knowledge_base import KnowledgeBase, SearchResult
 
 
-# Similarity below this threshold is not strong enough to ground a draft.
-MIN_KNOWLEDGE_SCORE = 0.08
+# Keep a small amount of evidence for short natural-language requests while
+# still excluding unrelated documents.
+MIN_KNOWLEDGE_SCORE = 0.03
 
 
 @dataclass(frozen=True)
