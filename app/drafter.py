@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from .ai import AIUnavailable, generate_grounded_draft
 from .classifier import Classification
 from .knowledge_base import SearchResult
 
@@ -13,41 +14,41 @@ class Draft:
     confidence: float
     review_required: bool
     grounding_note: str
+    ai_generated: bool = False
 
 
-def draft_response(
-    request: str,
-    classification: Classification,
-    results: list[SearchResult],
-) -> Draft:
-    """Create a transparent draft using only retrieved knowledge.
+def _source_payload(results: list[SearchResult]) -> list[dict[str, str]]:
+    return [
+        {"id": r.article.id, "title": r.article.title, "content": r.article.content}
+        for r in results
+    ]
 
-    The draft deliberately exposes retrieval confidence and review state so a
-    human can distinguish verified guidance from an uncertain match.
-    """
+
+def draft_response(request: str, classification: Classification, results: list[SearchResult], use_ai: bool = True) -> Draft:
+    """Create a grounded draft, using OpenAI when configured and falling back locally."""
     if not results:
         return Draft(
-            response=(
-                "Hi,\n\n"
-                "Thanks for contacting support. I don't have enough verified "
-                "information to answer this request yet. A support specialist "
-                "should review it before a response is sent.\n\n"
-                "Best,\nSupport Team"
-            ),
-            sources=[],
-            confidence=0.0,
-            review_required=True,
-            grounding_note="No knowledge-base article met the retrieval threshold.",
+            "Hi,\n\nThanks for contacting support. I don't have enough verified information to answer this request yet. A support specialist should review it before a response is sent.\n\nBest,\nSupport Team",
+            [], 0.0, True, "No knowledge-base article met the retrieval threshold.", False,
         )
 
     best = results[0]
     confidence = best.score
     review_required = classification.needs_review or confidence < 0.20
-    review_note = (
-        "Human review is required because the classification or knowledge match is uncertain."
-        if review_required
-        else "Retrieved guidance provides a strong basis for human review."
-    )
+    sources = [r.article.id for r in results]
+
+    if use_ai and not review_required:
+        try:
+            response = generate_grounded_draft(request, classification.category, _source_payload(results))
+            return Draft(
+                response, sources, confidence, True,
+                "AI-generated from retrieved knowledge. Human review is mandatory before approval.",
+                True,
+            )
+        except (AIUnavailable, Exception) as exc:
+            grounding_note = f"OpenAI unavailable; deterministic fallback used: {exc}"
+    else:
+        grounding_note = "Deterministic draft used because AI was disabled or review is already required."
 
     response = (
         "Hi,\n\n"
@@ -57,11 +58,4 @@ def draft_response(
         "Please do not send passwords or other sensitive credentials.\n\n"
         "Best,\nSupport Team"
     )
-    sources = [result.article.id for result in results]
-    return Draft(
-        response=response,
-        sources=sources,
-        confidence=confidence,
-        review_required=review_required,
-        grounding_note=review_note,
-    )
+    return Draft(response, sources, confidence, review_required, grounding_note, False)
