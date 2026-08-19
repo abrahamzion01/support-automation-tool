@@ -24,7 +24,12 @@ def _source_payload(results: list[SearchResult]) -> list[dict[str, str]]:
     ]
 
 
-def draft_response(request: str, classification: Classification, results: list[SearchResult], use_ai: bool = True) -> Draft:
+def draft_response(
+    request: str,
+    classification: Classification,
+    results: list[SearchResult],
+    use_ai: bool = True,
+) -> Draft:
     """Create a grounded draft, using OpenAI when configured and falling back locally."""
     if not results:
         return Draft(
@@ -39,13 +44,20 @@ def draft_response(request: str, classification: Classification, results: list[S
 
     if use_ai and not review_required:
         try:
-            response = generate_grounded_draft(request, classification.category, _source_payload(results))
+            response = generate_grounded_draft(
+                request,
+                classification.category,
+                _source_payload(results),
+            )
             return Draft(
-                response, sources, confidence, True,
+                response,
+                sources,
+                confidence,
+                True,
                 "AI-generated from retrieved knowledge. Human review is mandatory before approval.",
                 True,
             )
-        except (AIUnavailable, Exception) as exc:
+        except AIUnavailable as exc:
             grounding_note = f"OpenAI unavailable; deterministic fallback used: {exc}"
     else:
         grounding_note = "Deterministic draft used because AI was disabled or review is already required."
