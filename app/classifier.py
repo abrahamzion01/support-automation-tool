@@ -72,6 +72,7 @@ SIGNALS = {
 
 REVIEW_THRESHOLD = 0.65
 AMBIGUITY_MARGIN = 0.15
+MAX_CATEGORY_SCORE = 6
 
 
 def _tokens(text: str) -> set[str]:
@@ -98,8 +99,9 @@ def _score_category(normalized: str, tokens: set[str], signals: dict) -> tuple[i
 def classify_request(text: str) -> Classification:
     """Classify a request with weighted, transparent signals.
 
-    Low-confidence or closely competing classifications are explicitly marked
-    for human review instead of pretending the classifier is certain.
+    Confidence reflects both the strength of the winning evidence and how
+    clearly it beats competing categories. Weak matches are sent to review
+    rather than being presented as highly confident classifications.
     """
     if not text or not text.strip():
         return Classification("unknown", 0.0, True, ())
@@ -119,18 +121,24 @@ def classify_request(text: str) -> Classification:
     ranked = sorted(scored.items(), key=lambda item: item[1][0], reverse=True)
     category, (winning_score, matched) = ranked[0]
     total = sum(score for score, _ in scored.values())
-    confidence = min(0.99, 0.50 + 0.50 * (winning_score / total))
+
+    # Confidence combines absolute evidence strength with the share of the
+    # evidence belonging to the winning category. This avoids treating a
+    # single weak keyword as near-certain.
+    strength = min(winning_score / MAX_CATEGORY_SCORE, 1.0)
+    evidence_share = winning_score / max(total, 1)
+    confidence = 0.5 + 0.3 * strength + 0.2 * evidence_share
 
     if len(ranked) > 1:
         second_score = ranked[1][1][0]
-        gap = winning_score / max(total, 1) - second_score / max(total, 1)
+        gap = (winning_score - second_score) / max(total, 1)
     else:
         gap = 1.0
 
     needs_review = confidence < REVIEW_THRESHOLD or gap < AMBIGUITY_MARGIN
     return Classification(
         category=category,
-        confidence=round(confidence, 2),
+        confidence=round(min(confidence, 0.99), 2),
         needs_review=needs_review,
         matched_signals=tuple(sorted(set(matched))),
     )
