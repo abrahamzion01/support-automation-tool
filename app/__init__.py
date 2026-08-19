@@ -1,0 +1,1 @@
+"""Support automation application package."""
