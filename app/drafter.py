@@ -54,13 +54,19 @@ def draft_response(
                 sources,
                 confidence,
                 True,
-                "AI-generated from retrieved knowledge. Human review is mandatory before approval.",
+                "AI-generated from retrieved knowledge. Strong grounding basis; human review is mandatory before approval.",
                 True,
             )
         except AIUnavailable as exc:
-            grounding_note = f"OpenAI unavailable; deterministic fallback used: {exc}"
+            grounding_note = (
+                "OpenAI unavailable; deterministic fallback used: "
+                f"{exc}. Strong retrieved knowledge remains available for human review."
+            )
     else:
-        grounding_note = "Deterministic draft used because AI was disabled or review is already required."
+        grounding_note = (
+            "Deterministic draft used because AI was disabled or review is already required. "
+            "Human review is required before approval."
+        )
 
     response = (
         "Hi,\n\n"
