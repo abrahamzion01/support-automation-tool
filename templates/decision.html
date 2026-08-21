@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Review Complete</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 60px auto; padding: 0 20px; background: #f5f7fb; color: #172033; }
+    main { background: white; padding: 32px; border-radius: 16px; }
+    pre { white-space: pre-wrap; background: #f5f7fb; padding: 18px; border-radius: 10px; }
+    a { display: inline-block; margin-top: 20px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Review {{ decision.action }}</h1>
+  {% if decision.response %}
+    <h2>Final response for the support agent</h2>
+    <pre>{{ decision.response }}</pre>
+  {% else %}
+    <p>The draft was rejected and will not be sent.</p>
+  {% endif %}
+  <a href="{{ url_for('index') }}">Review another request</a>
+</main>
+</body>
+</html>
