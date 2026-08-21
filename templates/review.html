@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Review Draft</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 20px; background: #f5f7fb; color: #172033; }
+    section { background: white; padding: 24px; margin-bottom: 18px; border-radius: 14px; box-shadow: 0 5px 20px rgba(0,0,0,.06); }
+    textarea { width: 100%; min-height: 180px; box-sizing: border-box; padding: 12px; border: 1px solid #ccd3df; border-radius: 8px; }
+    button { border: 0; border-radius: 8px; padding: 10px 16px; margin: 8px 6px 0 0; cursor: pointer; }
+    .approve { background: #1f7a4d; color: white; }
+    .edit { background: #e8edf5; }
+    .reject { background: #b42318; color: white; }
+    .error { background: #fff0f0; padding: 12px; border-radius: 8px; }
+    .meta { display: flex; gap: 20px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+<h1>Human Review</h1>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+<section>
+  <h2>Customer request</h2>
+  <p>{{ result.request }}</p>
+  <div class="meta">
+    <span><strong>Category:</strong> {{ result.classification.category }}</span>
+    <span><strong>Confidence:</strong> {{ "%.2f"|format(result.classification.confidence) }}</span>
+    <span><strong>AI generated:</strong> {{ "yes" if result.draft.ai_generated else "no" }}</span>
+  </div>
+</section>
+<section>
+  <h2>Knowledge sources</h2>
+  {% if result.draft.sources %}
+  <ul>{% for source in result.draft.sources %}<li>{{ source }}</li>{% endfor %}</ul>
+  {% else %}<p>No verified sources found.</p>{% endif %}
+</section>
+<section>
+  <h2>Draft response</h2>
+  <p>{{ result.draft.response }}</p>
+</section>
+<section>
+  <h2>Decision</h2>
+  <form method="post" action="{{ url_for('review', draft_id=draft_id) }}">
+    <textarea name="edited_response" placeholder="If editing, write the replacement response here."></textarea><br>
+    <button class="approve" name="action" value="approve">Approve</button>
+    <button class="edit" name="action" value="edit">Save Edit</button>
+    <button class="reject" name="action" value="reject">Reject</button>
+  </form>
+</section>
+</body>
+</html>
