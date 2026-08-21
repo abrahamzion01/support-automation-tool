@@ -67,6 +67,13 @@ def _run_chat(knowledge_base: Path, review_support: bool = False) -> None:
                 _run_review(draft.response)
 
 
+def _run_web(knowledge_base: Path, host: str, port: int) -> None:
+    """Start the browser-based support interface."""
+    from app.web import create_app
+
+    create_app(knowledge_base).run(host=host, port=port, debug=False)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="AI-assisted support automation tool.")
     parser.add_argument("request", nargs="?", help="Incoming request or general question")
@@ -78,17 +85,26 @@ def main() -> None:
         help="Open human review automatically after support drafts in chat mode",
     )
     parser.add_argument("--review", action="store_true", help="Open human review after a support draft")
+    parser.add_argument("--web", action="store_true", help="Start the browser-based support interface")
+    parser.add_argument("--host", default="127.0.0.1", help="Web server host")
+    parser.add_argument("--port", default=5000, type=int, help="Web server port")
     args = parser.parse_args()
 
     if args.review_chat and not args.chat:
         parser.error("--review-chat requires --chat")
+    if args.web and (args.chat or args.request):
+        parser.error("--web cannot be combined with a request or --chat")
+
+    if args.web:
+        _run_web(args.knowledge_base, args.host, args.port)
+        return
 
     if args.chat:
         _run_chat(args.knowledge_base, review_support=args.review_chat)
         return
 
     if not args.request:
-        parser.error("provide a request or use --chat")
+        parser.error("provide a request, use --chat, or use --web")
 
     result = run_pipeline(args.request, args.knowledge_base)
     print(f"Category: {result.classification.category}")
