@@ -30,7 +30,10 @@ def _client():
 def _generate(prompt: str) -> str:
     client = _client()
     model = os.getenv("OPENAI_MODEL", DEFAULT_MODEL)
-    response = client.responses.create(model=model, input=prompt)
+    try:
+        response = client.responses.create(model=model, input=prompt)
+    except Exception as exc:
+        raise AIUnavailable(f"OpenAI request failed: {exc}") from exc
     text = response.output_text.strip()
     if not text:
         raise AIUnavailable("OpenAI returned an empty response.")
