@@ -2,7 +2,11 @@
 
 import os
 
+from dotenv import load_dotenv
+
 from .conversation import Message
+
+load_dotenv()
 
 DEFAULT_MODEL = "gpt-5.6-luna"
 
