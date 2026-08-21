@@ -12,7 +12,8 @@ DEFAULT_KB = Path(__file__).parent.parent / "data" / "knowledge_base.json"
 
 
 def create_app(knowledge_base: str | Path = DEFAULT_KB) -> Flask:
-    app = Flask(__name__)
+    template_dir = Path(__file__).resolve().parent.parent / "templates"
+    app = Flask(__name__, template_folder=template_dir)
     app.config["KNOWLEDGE_BASE"] = str(knowledge_base)
     app.config["DRAFTS"] = {}
 
