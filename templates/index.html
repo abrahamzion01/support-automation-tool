@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Support Automation AI</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f5f7fb; color: #172033; }
+    main { background: white; padding: 32px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
+    textarea { width: 100%; min-height: 160px; box-sizing: border-box; padding: 12px; margin: 12px 0; border: 1px solid #ccd3df; border-radius: 8px; }
+    button { border: 0; border-radius: 8px; padding: 11px 18px; cursor: pointer; background: #172033; color: white; }
+    .error { background: #fff0f0; padding: 12px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Support Automation AI</h1>
+  <p>Classify a request, retrieve verified guidance, and prepare a draft for human review.</p>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <form method="post" action="{{ url_for('support') }}">
+    <label for="message"><strong>Customer request</strong></label>
+    <textarea id="message" name="message" placeholder="Example: I was charged twice for my subscription." required></textarea>
+    <button type="submit">Analyze request</button>
+  </form>
+</main>
+</body>
+</html>
