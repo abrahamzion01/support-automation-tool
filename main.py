@@ -42,7 +42,7 @@ def _run_review(draft_response: str) -> None:
         print("The draft was rejected and will not be sent.")
 
 
-def _run_chat(knowledge_base: Path) -> None:
+def _run_chat(knowledge_base: Path, review_support: bool = False) -> None:
     """Run a multi-turn conversational session."""
     conversation = Conversation()
     print("AI chat started. Type 'exit' to stop.")
@@ -63,6 +63,8 @@ def _run_chat(knowledge_base: Path) -> None:
             draft = result.support_result.draft
             print("Sources: " + (", ".join(draft.sources) if draft.sources else "none"))
             print("Status: awaiting human review")
+            if review_support:
+                _run_review(draft.response)
 
 
 def main() -> None:
@@ -70,11 +72,19 @@ def main() -> None:
     parser.add_argument("request", nargs="?", help="Incoming request or general question")
     parser.add_argument("--knowledge-base", default=DEFAULT_KB, type=Path)
     parser.add_argument("--chat", action="store_true", help="Start a multi-turn AI conversation")
+    parser.add_argument(
+        "--review-chat",
+        action="store_true",
+        help="Open human review automatically after support drafts in chat mode",
+    )
     parser.add_argument("--review", action="store_true", help="Open human review after a support draft")
     args = parser.parse_args()
 
+    if args.review_chat and not args.chat:
+        parser.error("--review-chat requires --chat")
+
     if args.chat:
-        _run_chat(args.knowledge_base)
+        _run_chat(args.knowledge_base, review_support=args.review_chat)
         return
 
     if not args.request:
