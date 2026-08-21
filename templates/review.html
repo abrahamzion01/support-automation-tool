@@ -3,49 +3,364 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Review Draft</title>
+
+  <title>Review Draft - Support Automation AI</title>
+
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 20px; background: #f5f7fb; color: #172033; }
-    section { background: white; padding: 24px; margin-bottom: 18px; border-radius: 14px; box-shadow: 0 5px 20px rgba(0,0,0,.06); }
-    textarea { width: 100%; min-height: 180px; box-sizing: border-box; padding: 12px; border: 1px solid #ccd3df; border-radius: 8px; }
-    button { border: 0; border-radius: 8px; padding: 10px 16px; margin: 8px 6px 0 0; cursor: pointer; }
-    .approve { background: #1f7a4d; color: white; }
-    .edit { background: #e8edf5; }
-    .reject { background: #b42318; color: white; }
-    .error { background: #fff0f0; padding: 12px; border-radius: 8px; }
-    .meta { display: flex; gap: 20px; flex-wrap: wrap; }
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6f9;
+      color: #172033;
+    }
+
+    header {
+      background: #172033;
+      color: white;
+      padding: 22px 40px;
+    }
+
+    .header-content {
+      max-width: 1100px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .status {
+      font-size: 13px;
+      background: #d97706;
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 45px auto;
+      padding: 0 20px;
+    }
+
+    .hero {
+      margin-bottom: 25px;
+    }
+
+    .hero h1 {
+      font-size: 34px;
+      margin-bottom: 8px;
+    }
+
+    .hero p {
+      color: #657084;
+      font-size: 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e5e9f0;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    .request {
+      background: #f8f9fc;
+      border-left: 4px solid #172033;
+      padding: 16px;
+      border-radius: 8px;
+      line-height: 1.6;
+    }
+
+    .meta {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .meta-item {
+      background: #f1f3f7;
+      padding: 9px 13px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .sources {
+      padding-left: 20px;
+    }
+
+    .sources li {
+      margin-bottom: 8px;
+    }
+
+    .draft {
+      background: #f8f9fc;
+      padding: 18px;
+      border-radius: 10px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      resize: vertical;
+      padding: 15px;
+      border: 1px solid #ccd3df;
+      border-radius: 10px;
+      font: inherit;
+      color: #172033;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: #172033;
+      box-shadow: 0 0 0 3px rgba(23, 32, 51, 0.08);
+    }
+
+    .buttons {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 9px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .approve {
+      background: #1f7a4d;
+      color: white;
+    }
+
+    .edit {
+      background: #e8edf5;
+      color: #172033;
+    }
+
+    .reject {
+      background: #b42318;
+      color: white;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .error {
+      background: #fff0f0;
+      border: 1px solid #f2b8b5;
+      color: #9b1c1c;
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .back {
+      display: inline-block;
+      margin-top: 10px;
+      color: #172033;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    footer {
+      text-align: center;
+      color: #7a8496;
+      font-size: 13px;
+      margin: 35px 0;
+    }
+
+    @media (max-width: 700px) {
+      header {
+        padding: 18px 20px;
+      }
+
+      .header-content {
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .hero h1 {
+        font-size: 28px;
+      }
+
+      .card {
+        padding: 20px;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
   </style>
 </head>
+
 <body>
-<h1>Human Review</h1>
-{% if error %}<p class="error">{{ error }}</p>{% endif %}
-<section>
-  <h2>Customer request</h2>
-  <p>{{ result.request }}</p>
-  <div class="meta">
-    <span><strong>Category:</strong> {{ result.classification.category }}</span>
-    <span><strong>Confidence:</strong> {{ "%.2f"|format(result.classification.confidence) }}</span>
-    <span><strong>AI generated:</strong> {{ "yes" if result.draft.ai_generated else "no" }}</span>
+
+<header>
+  <div class="header-content">
+    <div class="brand">Support Automation AI</div>
+    <div class="status">Awaiting Review</div>
   </div>
-</section>
-<section>
-  <h2>Knowledge sources</h2>
-  {% if result.draft.sources %}
-  <ul>{% for source in result.draft.sources %}<li>{{ source }}</li>{% endfor %}</ul>
-  {% else %}<p>No verified sources found.</p>{% endif %}
-</section>
-<section>
-  <h2>Draft response</h2>
-  <p>{{ result.draft.response }}</p>
-</section>
-<section>
-  <h2>Decision</h2>
-  <form method="post" action="{{ url_for('review', draft_id=draft_id) }}">
-    <textarea name="edited_response" placeholder="If editing, write the replacement response here."></textarea><br>
-    <button class="approve" name="action" value="approve">Approve</button>
-    <button class="edit" name="action" value="edit">Save Edit</button>
-    <button class="reject" name="action" value="reject">Reject</button>
-  </form>
-</section>
+</header>
+
+<div class="container">
+
+  <div class="hero">
+    <h1>Human Review</h1>
+    <p>
+      Review the AI-assisted support response before it is approved.
+    </p>
+  </div>
+
+  {% if error %}
+    <div class="error">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Customer Request</h2>
+
+    <div class="request">
+      {{ result.request }}
+    </div>
+
+    <div class="meta">
+      <div class="meta-item">
+        <strong>Category:</strong>
+        {{ result.classification.category }}
+      </div>
+
+      <div class="meta-item">
+        <strong>Confidence:</strong>
+        {{ "%.2f"|format(result.classification.confidence) }}
+      </div>
+
+      <div class="meta-item">
+        <strong>AI Generated:</strong>
+        {{ "Yes" if result.draft.ai_generated else "No" }}
+      </div>
+
+      <div class="meta-item">
+        <strong>Review Required:</strong>
+        {{ "Yes" if result.draft.review_required else "No" }}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Knowledge Sources</h2>
+
+    {% if result.draft.sources %}
+
+      <ul class="sources">
+        {% for source in result.draft.sources %}
+          <li>{{ source }}</li>
+        {% endfor %}
+      </ul>
+
+    {% else %}
+
+      <p>No verified knowledge-base sources were found.</p>
+
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>AI Draft Response</h2>
+
+    <div class="draft">
+      {{ result.draft.response }}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Human Decision</h2>
+
+    <p>
+      Approve the response as written, edit it before approval,
+      or reject the draft.
+    </p>
+
+    <form method="post" action="{{ url_for('review', draft_id=draft_id) }}">
+
+      <label for="edited_response">
+        <strong>Edited response</strong>
+      </label>
+
+      <textarea
+        id="edited_response"
+        name="edited_response"
+        placeholder="If you choose 'Save Edit', write the replacement response here."
+      ></textarea>
+
+      <div class="buttons">
+
+        <button
+          class="approve"
+          type="submit"
+          name="action"
+          value="approve"
+        >
+          Approve
+        </button>
+
+        <button
+          class="edit"
+          type="submit"
+          name="action"
+          value="edit"
+        >
+          Save Edit
+        </button>
+
+        <button
+          class="reject"
+          type="submit"
+          name="action"
+          value="reject"
+        >
+          Reject
+        </button>
+
+      </div>
+
+    </form>
+
+    <a class="back" href="{{ url_for('index') }}">
+      ← Review another request
+    </a>
+
+  </div>
+
+  <footer>
+    AI-assisted support · Human approval required
+  </footer>
+
+</div>
+
 </body>
 </html>
