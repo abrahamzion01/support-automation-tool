@@ -84,6 +84,7 @@
 
     .draft {
       line-height: 1.6;
+      white-space: pre-wrap;
     }
 
     .empty {
@@ -132,54 +133,52 @@
     Previously submitted support requests and their generated drafts.
   </p>
 
-  {% if drafts %}
+  {% if requests %}
 
-  {% for draft_id, entry in drafts.items() %} 
-
-    {% set result = entry.result %}
+      {% for row in requests %}
 
       <div class="card">
 
-        <h2>Request #{{ draft_id }}</h2>
+        <h2>Request #{{ row[0] }}</h2>
 
         <div class="meta">
           <span class="badge">
-            {{ result.classification.category }}
-          </span>
-          
-          <span>
-            <strong>Status:</strong>
-            {{ entry.status }}
+            {{ row[2] }}
           </span>
 
           <span>
             <strong>Confidence:</strong>
-            {{ "%.2f"|format(result.classification.confidence) }}
+            {{ "%.2f"|format(row[3]) }}
           </span>
 
           <span>
-            <strong>AI generated:</strong>
-            {{ "yes" if result.draft.ai_generated else "no" }}
+            <strong>Status:</strong>
+            {{ row[6] }}
+          </span>
+
+          <span>
+            <strong>Created:</strong>
+            {{ row[7] }}
           </span>
         </div>
 
         <h3>Customer request</h3>
 
         <div class="request">
-          {{ result.request }}
+          {{ row[1] }}
         </div>
 
         <h3>Draft response</h3>
 
         <div class="draft">
-          {{ result.draft.response }}
+          {{ row[4] }}
         </div>
 
-        <h3>Sources</h3>
+        <h3>Knowledge sources</h3>
 
-        {% if result.draft.sources %}
+        {% if row[5] %}
           <ul>
-            {% for source in result.draft.sources %}
+            {% for source in row[5] %}
               <li>{{ source }}</li>
             {% endfor %}
           </ul>
