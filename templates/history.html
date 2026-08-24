@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Request History - Support Automation AI</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6f9;
+      color: #172033;
+    }
+
+    header {
+      background: #172033;
+      color: white;
+      padding: 22px 40px;
+    }
+
+    .header-content {
+      max-width: 1100px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .back {
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 45px auto;
+      padding: 0 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #657084;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #e5e9f0;
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 18px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .meta {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+      font-size: 14px;
+    }
+
+    .request {
+      background: #f4f6f9;
+      padding: 15px;
+      border-radius: 9px;
+      margin-top: 15px;
+    }
+
+    .draft {
+      line-height: 1.6;
+    }
+
+    .empty {
+      background: white;
+      padding: 30px;
+      border-radius: 14px;
+      text-align: center;
+      color: #657084;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 20px;
+      background: #e8edf5;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 700px) {
+      header {
+        padding: 18px 20px;
+      }
+
+      .header-content {
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="header-content">
+    <div class="brand">Support Automation AI</div>
+    <a class="back" href="{{ url_for('index') }}">← New Request</a>
+  </div>
+</header>
+
+<div class="container">
+
+  <h1>Request History</h1>
+
+  <p class="subtitle">
+    Previously submitted support requests and their generated drafts.
+  </p>
+
+  {% if drafts %}
+
+  {% for draft_id, entry in drafts.items() %} 
+
+    {% set result = entry.result %}
+
+      <div class="card">
+
+        <h2>Request #{{ draft_id }}</h2>
+
+        <div class="meta">
+          <span class="badge">
+            {{ result.classification.category }}
+          </span>
+          
+          <span>
+            <strong>Status:</strong>
+            {{ entry.status }}
+          </span>
+
+          <span>
+            <strong>Confidence:</strong>
+            {{ "%.2f"|format(result.classification.confidence) }}
+          </span>
+
+          <span>
+            <strong>AI generated:</strong>
+            {{ "yes" if result.draft.ai_generated else "no" }}
+          </span>
+        </div>
+
+        <h3>Customer request</h3>
+
+        <div class="request">
+          {{ result.request }}
+        </div>
+
+        <h3>Draft response</h3>
+
+        <div class="draft">
+          {{ result.draft.response }}
+        </div>
+
+        <h3>Sources</h3>
+
+        {% if result.draft.sources %}
+          <ul>
+            {% for source in result.draft.sources %}
+              <li>{{ source }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No verified sources found.</p>
+        {% endif %}
+
+      </div>
+
+    {% endfor %}
+
+  {% else %}
+
+    <div class="empty">
+      <h2>No requests yet</h2>
+      <p>Submitted support requests will appear here.</p>
+    </div>
+
+  {% endif %}
+
+</div>
+
+</body>
+</html>

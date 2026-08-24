@@ -20,6 +20,10 @@ def create_app(knowledge_base: str | Path = DEFAULT_KB) -> Flask:
     @app.get("/")
     def index():
         return render_template("index.html")
+    @app.get("/history")
+    def history():
+        drafts = app.config["DRAFTS"]
+        return render_template("history.html", drafts=drafts)
 
     @app.post("/support")
     def support():
@@ -29,14 +33,22 @@ def create_app(knowledge_base: str | Path = DEFAULT_KB) -> Flask:
 
         result = run_pipeline(message, app.config["KNOWLEDGE_BASE"])
         draft_id = str(len(app.config["DRAFTS"]) + 1)
-        app.config["DRAFTS"][draft_id] = result
+        app.config["DRAFTS"][draft_id] = {
+        "result": result,
+        "status": "pending",
+        }
         return render_template("review.html", result=result, draft_id=draft_id)
 
     @app.post("/review/<draft_id>")
     def review(draft_id: str):
-        result = app.config["DRAFTS"].get(draft_id)
-        if result is None:
-            return render_template("index.html", error="Draft not found. Please submit the request again."), 404
+        draft = app.config["DRAFTS"].get(draft_id)
+        if draft is None:
+            return render_template(
+                "index.html",
+                error="Draft not found. Please submit the request again.",
+            ), 404
+
+        result = draft["result"]
 
         action = request.form.get("action", "").strip().lower()
         edited_response = request.form.get("edited_response")

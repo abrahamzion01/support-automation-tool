@@ -33,6 +33,24 @@ class WebTests(unittest.TestCase):
         self.assertIn(b"Human Review", response.data)
         self.assertIn(b"billing-duplicate-charge", response.data)
 
+    def test_history_page_loads(self):
+        response = self.client.get("/history")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Request History", response.data)
+        self.assertIn(b"No requests yet", response.data)
+
+    def test_submitted_request_appears_in_history(self):
+        response = self.client.post(
+            "/support",
+            data={"message": "I was charged twice for my subscription."},
+        )
+        self.assertEqual(response.status_code, 200)
+
+        history = self.client.get("/history")
+        self.assertEqual(history.status_code, 200)
+        self.assertIn(b"I was charged twice for my subscription.", history.data)
+        self.assertIn(b"billing-duplicate-charge", history.data)
+
     @patch("app.web.run_pipeline")
     def test_approve_review(self, run_pipeline):
         result = __import__("app.pipeline", fromlist=["SupportResult"]).run_pipeline(
