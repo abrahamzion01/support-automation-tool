@@ -5,7 +5,12 @@ from pathlib import Path
 
 from flask import Flask, render_template, request
 
-from .database import get_requests, initialize_database, save_request
+from .database import (
+    get_requests,
+    initialize_database,
+    save_request,
+    update_request,
+)
 from .pipeline import run_pipeline
 from .review import review_draft
 
@@ -85,18 +90,19 @@ def create_app(
         )
 
         if app.config["DATABASE"] is None:
-            save_request(result)
+            request_id = save_request(result)
         else:
-            save_request(
+            request_id = save_request(
                 result,
                 app.config["DATABASE"],
             )
 
-        draft_id = str(len(app.config["DRAFTS"]) + 1)
+        draft_id = str(request_id)
 
         app.config["DRAFTS"][draft_id] = {
             "result": result,
             "status": "pending",
+            "request_id": request_id,
         }
 
         return render_template(
@@ -119,6 +125,7 @@ def create_app(
             )
 
         result = draft["result"]
+        request_id = draft["request_id"]
 
         action = request.form.get(
             "action",
@@ -145,6 +152,22 @@ def create_app(
                 ),
                 400,
             )
+
+        if app.config["DATABASE"] is None:
+            update_request(
+                request_id,
+                decision.action,
+                decision.response,
+            )
+        else:
+            update_request(
+                request_id,
+                decision.action,
+                decision.response,
+                app.config["DATABASE"],
+            )
+
+        draft["status"] = decision.action
 
         return render_template(
             "decision.html",
