@@ -114,6 +114,7 @@ class WebTests(unittest.TestCase):
         self.assertIn(b"Review approved", decision.data)
 
         history = self.client.get("/history")
+        self.assertEqual(history.status_code, 200)
         self.assertIn(b"approved", history.data)
 
     @patch("app.web.run_pipeline")
@@ -133,6 +134,7 @@ class WebTests(unittest.TestCase):
         self.assertIn(b"Review edited", decision.data)
 
         history = self.client.get("/history")
+        self.assertEqual(history.status_code, 200)
         self.assertIn(b"edited", history.data)
         self.assertIn(
             b"Improved response for the customer.",
@@ -153,6 +155,7 @@ class WebTests(unittest.TestCase):
         self.assertIn(b"Review rejected", decision.data)
 
         history = self.client.get("/history")
+        self.assertEqual(history.status_code, 200)
         self.assertIn(b"rejected", history.data)
 
 

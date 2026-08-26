@@ -101,8 +101,8 @@ def create_app(
 
         app.config["DRAFTS"][draft_id] = {
             "result": result,
-            "status": "pending",
             "request_id": request_id,
+            "status": "pending",
         }
 
         return render_template(
@@ -125,7 +125,6 @@ def create_app(
             )
 
         result = draft["result"]
-        request_id = draft["request_id"]
 
         action = request.form.get(
             "action",
@@ -152,6 +151,8 @@ def create_app(
                 ),
                 400,
             )
+
+        request_id = draft["request_id"]
 
         if app.config["DATABASE"] is None:
             update_request(
