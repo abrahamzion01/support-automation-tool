@@ -21,7 +21,7 @@ def initialize_database(database_path: str | Path = DEFAULT_DB):
             request TEXT NOT NULL,
             category TEXT NOT NULL,
             confidence REAL NOT NULL,
-            draft_response TEXT NOT NULL,
+            draft_response TEXT,
             sources TEXT NOT NULL DEFAULT '[]',
             status TEXT NOT NULL,
             created_at TEXT NOT NULL
@@ -31,7 +31,9 @@ def initialize_database(database_path: str | Path = DEFAULT_DB):
 
     columns = {
         row[1]
-        for row in connection.execute("PRAGMA table_info(requests)").fetchall()
+        for row in connection.execute(
+            "PRAGMA table_info(requests)"
+        ).fetchall()
     }
 
     if "sources" not in columns:
@@ -77,6 +79,33 @@ def save_request(result, database_path: str | Path = DEFAULT_DB):
     connection.close()
 
     return request_id
+
+
+def update_request(
+    request_id: int,
+    status: str,
+    draft_response: str | None,
+    database_path: str | Path = DEFAULT_DB,
+):
+    initialize_database(database_path)
+
+    connection = get_connection(database_path)
+
+    connection.execute(
+        """
+        UPDATE requests
+        SET status = ?, draft_response = ?
+        WHERE id = ?
+        """,
+        (
+            status,
+            draft_response,
+            request_id,
+        ),
+    )
+
+    connection.commit()
+    connection.close()
 
 
 def get_requests(database_path: str | Path = DEFAULT_DB):
